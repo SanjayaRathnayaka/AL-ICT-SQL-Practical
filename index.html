@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="si" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>A/L ICT SQL Master Lab & DB Browser - Complete NCC/NIE Syllabus</title>
+    
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2906/2906206.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- AlaSQL CDN for In-Browser SQL Execution -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alasql/4.3.0/alasql.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#090d16',
+                        cardBg: '#131c31',
+                        accentCyan: '#06b6d4',
+                        accentEmerald: '#10b981',
+                        accentAmber: '#f59e0b',
+                        accentRose: '#f43f5e',
+                        accentPurple: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes calmPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .calm-animate { animation: calmPulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+        .font-code { font-family: 'Courier New', Courier, monospace; }
+        .tree-node-hover:hover { background-color: rgba(30, 41, 59, 0.7); }
+    </style>
+</head>
+<body class="bg-darkBg text-slate-100 h-full flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+
+<!-- Header -->
+<header class="bg-cardBg border-b border-slate-800 px-4 py-2.5 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-emerald-500 to-purple-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+                <i data-lucide="database" class="w-5 h-5 text-slate-950 font-bold"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-bold text-cyan-400 tracking-wide leading-tight">උසස් පෙළ ICT - SQL ප්‍රායෝගික හා න්‍යායාත්මක මැදිරිය</h1>
+                <p class="text-[11px] text-slate-400">NCC / NIE A/L ICT සම්පූර්ණ විෂය නිර්දේශය (Offline PWA Ready)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- Active DB Selector Pill -->
+            <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+                <i data-lucide="server" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span class="text-[10px] text-slate-400">Active DB:</span>
+                <span id="header-active-db" class="text-xs font-mono font-bold text-emerald-400">studentdetails</span>
+            </div>
+
+            <span id="offline-badge" class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Offline Ready
+            </span>
+            <button onclick="resetDatabase()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700 transition active:scale-95 flex items-center gap-1">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-cyan-400"></i>
+                <span>Reset System</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-y-auto">
+        
+        <!-- Left Column: DB Tree, Commands, Joins & Normalization (6 Cols) -->
+        <section class="lg:col-span-6 flex flex-col space-y-4">
+            
+            <!-- Tab Navigation -->
+            <div class="flex bg-cardBg p-1 rounded-xl border border-slate-800 overflow-x-auto scrollbar-thin shrink-0">
+                <button onclick="switchTab('tree')" id="tab-tree" class="flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg bg-cyan-500 text-slate-950 transition shadow flex items-center justify-center gap-1">
+                    <i data-lucide="folder-tree" class="w-3.5 h-3.5"></i>
+                    <span>DB Tree</span>
+                </button>
+                <button onclick="switchTab('chart')" id="tab-chart" class="flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">Commands Chart</button>
+                <button onclick="switchTab('commands')" id="tab-commands" class="flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">විධාන (1-25)</button>
+                <button onclick="switchTab('joins')" id="tab-joins" class="flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">SQL Joins</button>
+                <button onclick="switchTab('normalization')" id="tab-normalization" class="flex-1 min-w-[105px] py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition">ප්‍රමතකරණය</button>
+            </div>
+
+            <!-- Tab 1: SSMS / DB Browser Interactive Tree View -->
+            <div id="content-tree" class="space-y-3 flex-1 flex flex-col min-h-0">
+                <div class="bg-cardBg border border-slate-800 p-3.5 rounded-2xl shadow-lg flex flex-col flex-1">
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+                            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Database Navigation Tree</h2>
+                        </div>
+                        <button onclick="renderDatabaseTree()" class="text-[10px] px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync Tree
+                        </button>
+                    </div>
+                    <div id="tree-container" class="flex-1 overflow-y-auto bg-slate-950 p-3 rounded-xl border border-slate-800/80 font-mono text-xs space-y-2 min-h-[320px]"></div>
+                </div>
+            </div>
+
+            <!-- Tab 2: SQL Commands Taxonomy Tree Chart -->
+            <div id="content-chart" class="hidden space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                <div class="bg-cardBg border border-slate-800 p-4 rounded-2xl shadow-lg">
+                    <h2 class="text-sm font-bold text-cyan-400 mb-2">SQL විධාන වර්ගීකරණය (SQL Commands Taxonomy)</h2>
+                    <div class="space-y-3 font-mono text-xs mt-3">
+                        <div class="bg-slate-900 border border-cyan-500/30 p-3 rounded-xl">
+                            <div class="text-cyan-400 font-bold mb-1">1. DDL (Data Definition Language)[cite: 1]</div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="bg-cyan-950 text-cyan-300 px-2 py-1 rounded border border-cyan-800">CREATE[cite: 1]</span>
+                                <span class="bg-cyan-950 text-cyan-300 px-2 py-1 rounded border border-cyan-800">DROP[cite: 1]</span>
+                                <span class="bg-cyan-950 text-cyan-300 px-2 py-1 rounded border border-cyan-800">ALTER[cite: 1]</span>
+                                <span class="bg-cyan-950 text-cyan-300 px-2 py-1 rounded border border-cyan-800">TRUNCATE[cite: 1]</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-emerald-500/30 p-3 rounded-xl">
+                            <div class="text-emerald-400 font-bold mb-1">2. DML (Data Manipulation Language)[cite: 1]</div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="bg-emerald-950 text-emerald-300 px-2 py-1 rounded border border-emerald-800">INSERT[cite: 1]</span>
+                                <span class="bg-emerald-950 text-emerald-300 px-2 py-1 rounded border border-emerald-800">UPDATE[cite: 1]</span>
+                                <span class="bg-emerald-950 text-emerald-300 px-2 py-1 rounded border border-emerald-800">DELETE[cite: 1]</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-amber-500/30 p-3 rounded-xl">
+                            <div class="text-amber-400 font-bold mb-1">3. TCL (Transaction Control Language)[cite: 1]</div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="bg-amber-950 text-amber-300 px-2 py-1 rounded border border-amber-800">COMMIT[cite: 1]</span>
+                                <span class="bg-amber-950 text-amber-300 px-2 py-1 rounded border border-amber-800">SAVEPOINT[cite: 1]</span>
+                                <span class="bg-amber-950 text-amber-300 px-2 py-1 rounded border border-amber-800">ROLLBACK[cite: 1]</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-purple-500/30 p-3 rounded-xl">
+                            <div class="text-purple-400 font-bold mb-1">4. DQL (Data Query Language)[cite: 1]</div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="bg-purple-950 text-purple-300 px-2 py-1 rounded border border-purple-800">SELECT[cite: 1]</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900 border border-rose-500/30 p-3 rounded-xl">
+                            <div class="text-rose-400 font-bold mb-1">5. DCL (Data Control Language)[cite: 1]</div>
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <span class="bg-rose-950 text-rose-300 px-2 py-1 rounded border border-rose-800">GRANT[cite: 1]</span>
+                                <span class="bg-rose-950 text-rose-300 px-2 py-1 rounded border border-rose-800">REVOKE[cite: 1]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: 1-25 Full PDF Commands Curriculum -->
+            <div id="content-commands" class="hidden space-y-3 max-h-[600px] overflow-y-auto pr-1 scrollbar-thin">
+                <div class="bg-cardBg border border-slate-800 p-3.5 rounded-xl space-y-2">
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded">1 - 4. Database Creation & Management[cite: 2]</span>
+                    <div class="space-y-1 font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <p>CREATE DATABASE studentdetails;[cite: 2]</p>
+                        <p>USE DATABASE studentdetails;[cite: 2]</p>
+                        <p>SHOW DATABASES;[cite: 2]</p>
+                        <p>DROP DATABASE studentdetails;[cite: 2]</p>
+                    </div>
+                    <button onclick="loadQueryToEditor('CREATE DATABASE school_db; USE DATABASE school_db;')" class="text-[10px] px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded">Editor එකට යොදන්න</button>
+                </div>
+
+                <div class="bg-cardBg border border-slate-800 p-3.5 rounded-xl space-y-2">
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded">5 - 9. Table & DML Operations[cite: 2, 3]</span>
+                    <div class="font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 space-y-1">
+                        <p>CREATE TABLE student (STID INT, LastName VARCHAR(255), FirstName VARCHAR(255), Address VARCHAR(255), Grade VARCHAR(255));[cite: 2]</p>
+                        <p>INSERT INTO student VALUES ('001', 'Perera', 'Kusal', 'Pallama', '13D');[cite: 2]</p>
+                        <p>SELECT * FROM student;[cite: 2]</p>
+                        <p>DELETE FROM student WHERE STID = '002';[cite: 3]</p>
+                        <p>DROP TABLE student;[cite: 3]</p>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg border border-slate-800 p-3.5 rounded-xl space-y-2">
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded">10 - 17. Constraints & Alter Table[cite: 3, 4]</span>
+                    <div class="font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 space-y-1">
+                        <p>STID INT(20) NOT NULL, PRIMARY KEY (STID)[cite: 3]</p>
+                        <p>FOREIGN KEY (STID) REFERENCES student (STID)[cite: 4]</p>
+                        <p>ALTER TABLE student ADD Contact VARCHAR(10) NOT NULL;[cite: 4]</p>
+                        <p>ALTER TABLE student DROP COLUMN Contact;[cite: 4]</p>
+                        <p>ALTER TABLE student MODIFY COLUMN Grade CHAR(255);[cite: 4]</p>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg border border-slate-800 p-3.5 rounded-xl space-y-2">
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded">18 - 24. Filtering, Aggregate & Sorting[cite: 4, 5]</span>
+                    <div class="font-mono text-[11px] text-emerald-400 bg-slate-950 p-2.5 rounded border border-slate-800 space-y-1">
+                        <p>SELECT STID, Name, Grade FROM student;[cite: 4]</p>
+                        <p>SELECT * FROM marks WHERE Marks BETWEEN 50 AND 65 AND SUBID = '001';[cite: 5]</p>
+                        <p>SELECT SUM(Marks), AVG(Marks), MIN(Marks), MAX(Marks), COUNT(*) FROM marks;[cite: 5]</p>
+                        <p>UPDATE student SET Name = 'Sajith' WHERE Name = 'Kusal';[cite: 5]</p>
+                        <p>SELECT * FROM marks ORDER BY Marks ASC;[cite: 5]</p>
+                    </div>
+                    <button onclick="loadQueryToEditor('SELECT * FROM Marks ORDER BY Score DESC;')" class="text-[10px] px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded">Editor එකට යොදන්න</button>
+                </div>
+            </div>
+
+            <!-- Tab 4: Comprehensive SQL Joins -->
+            <div id="content-joins" class="hidden space-y-3 max-h-[600px] overflow-y-auto pr-1 scrollbar-thin">
+                <div class="bg-cardBg border border-slate-800 p-4 rounded-2xl space-y-3">
+                    <h3 class="text-sm font-bold text-cyan-400">25. SQL Join Queries (වගු සංයුක්ත කිරීම)[cite: 5]</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">දත්ත සමුදායක වගු කිහිපයක දත්ත එකට සම්බන්ධ කර එකවර බලා ගැනීමට SQL Join භාවිතා කරයි[cite: 5]. ඒවා ප්‍රධාන ආකාර 4 කි[cite: 5].</p>
+
+                    <!-- INNER JOIN -->
+                    <div class="bg-slate-900 border border-cyan-500/30 p-3 rounded-xl space-y-1.5">
+                        <h4 class="text-xs font-bold text-cyan-300">1. INNER JOIN</h4>
+                        <p class="text-[11px] text-slate-300">වගු දෙකක දත්ත අතරින් වගු දෙකටම පොදු (Matching) දත්ත පමණක් ලබාගැනීමට මෙම ක්‍රමය යොදා ගනී[cite: 5].</p>
+                        <code class="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2 rounded">
+                            SELECT student.Name, marks.Subject, marks.Score FROM student INNER JOIN marks ON student.StudentID = marks.StudentID;
+                        </code>
+                        <button onclick="loadQueryToEditor('SELECT Student.Name, Marks.Subject, Marks.Score FROM Student INNER JOIN Marks ON Student.StudentID = Marks.StudentID;')" class="text-[10px] px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded">Editor එකට යොදන්න</button>
+                    </div>
+
+                    <!-- LEFT JOIN -->
+                    <div class="bg-slate-900 border border-emerald-500/30 p-3 rounded-xl space-y-1.5">
+                        <h4 class="text-xs font-bold text-emerald-300">2. LEFT JOIN</h4>
+                        <p class="text-[11px] text-slate-300">වම්පස වගුවේ සියලු දත්ත සමඟ දකුණු පස වගුවේ ගැළපෙන දත්ත පමණක් ලබා ගැනීමට භාවිතා කරයි[cite: 6].</p>
+                        <code class="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2 rounded">
+                            SELECT student.Name, marks.Subject FROM student LEFT JOIN marks ON student.StudentID = marks.StudentID;
+                        </code>
+                        <button onclick="loadQueryToEditor('SELECT Student.Name, Marks.Subject FROM Student LEFT JOIN Marks ON Student.StudentID = Marks.StudentID;')" class="text-[10px] px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded">Editor එකට යොදන්න</button>
+                    </div>
+
+                    <!-- RIGHT JOIN -->
+                    <div class="bg-slate-900 border border-amber-500/30 p-3 rounded-xl space-y-1.5">
+                        <h4 class="text-xs font-bold text-amber-300">3. RIGHT JOIN</h4>
+                        <p class="text-[11px] text-slate-300">දකුණු පස වගුවේ සියලු දත්ත සමඟ වම් පස වගුවේ ගැළපෙන දත්ත පමණක් ලබා ගැනීමට භාවිතා කරයි[cite: 6, 7].</p>
+                        <code class="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2 rounded">
+                            SELECT student.Name, marks.Subject FROM student RIGHT JOIN marks ON student.StudentID = marks.StudentID;
+                        </code>
+                        <button onclick="loadQueryToEditor('SELECT Student.Name, Marks.Subject FROM Student RIGHT JOIN Marks ON Student.StudentID = Marks.StudentID;')" class="text-[10px] px-2.5 py-1 bg-cyan-500/20 text-cyan-300 rounded">Editor එකට යොදන්න</button>
+                    </div>
+
+                    <!-- FULL JOIN -->
+                    <div class="bg-slate-900 border border-purple-500/30 p-3 rounded-xl space-y-1.5">
+                        <h4 class="text-xs font-bold text-purple-300">4. FULL OUTER JOIN / FULL JOIN</h4>
+                        <p class="text-[11px] text-slate-300">LEFT JOIN සහ RIGHT JOIN යන අවස්ථා දෙකෙහිම සංයෝගයෙන් ප්‍රතිදානය පෙන්වයි[cite: 7].</p>
+                        <code class="block font-mono text-[11px] text-emerald-400 bg-slate-950 p-2 rounded">
+                            SELECT student.Name, marks.Subject FROM student FULL JOIN marks ON student.StudentID = marks.StudentID;
+                        </code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: Complete Database Normalization Notes -->
+            <div id="content-normalization" class="hidden space-y-3 max-h-[600px] overflow-y-auto pr-1 scrollbar-thin">
+                <div class="bg-cardBg border border-slate-800 p-4 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-bold text-amber-400">දත්ත සමුදාය ප්‍රමතකරණය (Database Normalization)[cite: 7]</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed">දත්ත සමුදායක ගබඩා වන දත්තවල විවිධ විශමතා / විපරිතතා (Anomalies) අවම කිරීම සඳහා ප්‍රමතකරණය භාවිතා කරයි[cite: 7].</p>
+
+                    <!-- 1. Anomalies -->
+                    <div class="bg-slate-900 border border-rose-500/30 p-3 rounded-xl space-y-2 text-xs">
+                        <span class="text-rose-400 font-bold block">1. දත්ත සමුදා විපරිතතා (Anomalies):[cite: 7]</span>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1.5 text-[11px]">
+                            <li><strong class="text-white">දත්ත අනුපිටපත්වීම (Data Redundancy):</strong> එකම දත්තය නැවත නැවත පිටපත් වීම නිසා අනවශ්‍ය ඉඩකඩ වැයවීම සහ නඩත්තුව අපහසු වීම[cite: 7, 8].</li>
+                            <li><strong class="text-white">ආදාන විපරිතතා (Input Anomalies):</strong> වෙනත් දත්ත ලැබෙන තෙක් දැනට පවතින දත්ත ආදානය කිරීම අපහසු වීම[cite: 8].</li>
+                            <li><strong class="text-white">මකා දැමීමේ විපරිතතා (Delete Anomalies):</strong> දත්තයක් මකා දැමීමේදී ඊට අමතරව වෙනත් වැදගත් දත්තද මැකී යාම[cite: 8, 9].</li>
+                            <li><strong class="text-white">යාවත්කාලීන කිරීමේ විපරිතතා (Update Anomalies):</strong> එකම දත්තය ස්ථාන ගණනාවක පවතින විට සියලු ස්ථානවල එකවර යාවත්කාලීන කිරීමට අපහසු වීම[cite: 9].</li>
+                        </ul>
+                    </div>
+
+                    <!-- 2. Dependencies -->
+                    <div class="bg-slate-900 border border-cyan-500/30 p-3 rounded-xl space-y-2 text-xs">
+                        <span class="text-cyan-400 font-bold block">2. පරායක්තතාවන් සහ උපලක්ෂණ (Dependencies):[cite: 9, 10, 11]</span>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1.5 text-[11px]">
+                            <li><strong class="text-white">කාර්යබද්ධ පරායක්තතාවය (Functional Dependency):</strong> එක් උපලක්ෂණයක් මඟින් වගුවේ වෙනත් උපලක්ෂණයක් අනන්‍යව හඳුනාගත හැකි වීම[cite: 9].</li>
+                            <li><strong class="text-white">පූර්ණ පරායක්තතාවය (Full Dependency):</strong> සෑම උපලක්ෂණයක්ම ප්‍රාථමික යතුර මත පමණක් රඳා පැවතීම[cite: 10].</li>
+                            <li><strong class="text-white">ආංශික පරායක්තතාවය (Partial Dependency):</strong> සංයුක්ත ප්‍රාථමික යතුරක (Composite Primary Key) එක් කොටසක් මත ප්‍රාථමික නොවන ක්ෂේත්‍රයක් රඳා පැවතීම[cite: 10].</li>
+                            <li><strong class="text-white">සංක්‍රාන්ති පරායක්තතාවය (Transitive Dependency):</strong> ප්‍රාථමික යතුරු නොවන ක්ෂේත්‍ර දෙකක් අතර එකිනෙක රඳා පැවතීම[cite: 11].</li>
+                            <li><strong class="text-white">බහු අගයන් සහිත උපලක්ෂණ (Multivalued Attributes):</strong> එක් උපලක්ෂණයක් සඳහා එකකට වඩා වැඩි අගයන් ප්‍රමාණයක් ඇතුළත් වී තිබීම (උදා: දුරකථන අංක දෙකක් එකම තීරුවක යෙදීම)[cite: 11].</li>
+                        </ul>
+                    </div>
+
+                    <!-- 3. Levels of Normalization -->
+                    <div class="space-y-2.5 text-xs">
+                        <span class="text-amber-300 font-bold block">3. ප්‍රමත මට්ටම් (Levels of Normalization):[cite: 11]</span>
+                        
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                            <span class="text-amber-300 font-bold">0NF (ශුන්‍ය ප්‍රමත අවස්ථාව / Unnormalized):[cite: 11, 12]</span>
+                            <p class="text-[11px] text-slate-300">සියලුම දත්ත එකම පැතලි වගුවක (Flat File) පැවතීම[cite: 11, 12]. බහු අගයන් සහිත උපලක්ෂණ සහ විපරිතතා පවතී[cite: 11, 12].</p>
+                        </div>
+
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                            <span class="text-emerald-300 font-bold">1NF (පළමු ප්‍රමත අවස්ථාව):[cite: 12, 13]</span>
+                            <p class="text-[11px] text-slate-300">වගුවක සෑම තීරුවකටම තනි පරමාණුක අගයක් (Atomic Value) පමණක් ඇතුළත් විය යුතුය[cite: 12, 13]. බහු අගයන් සහිත උපලක්ෂණ වෙනම වගුවකට වෙන් කර ප්‍රාථමික/ආගන්තුක යතුරු මඟින් සම්බන්ධ කළ යුතුය[cite: 13].</p>
+                        </div>
+
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                            <span class="text-cyan-300 font-bold">2NF (දෙවන ප්‍රමත අවස්ථාව):[cite: 13, 14]</span>
+                            <p class="text-[11px] text-slate-300">වගුව 1NF හි පැවතිය යුතු අතර, සියලුම <strong>ආංශික පරායක්තතාවන් (Partial Dependencies)</strong> ඉවත් කර තිබිය යුතුය[cite: 13, 14]. සංයුක්ත ප්‍රාථමික යතුරක කොටසක් මත රඳාපවතින ක්ෂේත්‍ර වෙනම වගුවකට මාරු කළ යුතුය[cite: 14].</p>
+                        </div>
+
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                            <span class="text-purple-300 font-bold">3NF (තෙවන ප්‍රමත අවස්ථාව):[cite: 14, 15]</span>
+                            <p class="text-[11px] text-slate-300">වගුව 2NF හි පැවතිය යුතු අතර, සියලුම <strong>සංක්‍රාන්තික පරායක්තතාවන් (Transitive Dependencies)</strong> ඉවත් කර තිබිය යුතුය[cite: 14, 15]. ප්‍රාථමික යතුරු නොවන ක්ෂේත්‍ර අතර පවතින අන්‍යෝන්‍ය රඳාපැවතීම් වෙනම වගු ලෙස සකස් කළ යුතුය[cite: 14, 15].</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Interactive Console & Output (6 Cols) -->
+        <section class="lg:col-span-6 flex flex-col space-y-4">
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col space-y-3">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-1 border-b border-slate-800">
+                    <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
+                        <span>SQL කේත සංස්කාරකය (Console)</span>
+                    </span>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <label for="db-select-dropdown" class="text-[11px] text-slate-400 shrink-0">තෝරාගත් DB:</label>
+                        <select id="db-select-dropdown" onchange="switchDatabase(this.value)" class="bg-slate-950 text-cyan-300 text-xs font-mono font-bold px-2.5 py-1 rounded-lg border border-cyan-500/40 focus:outline-none focus:border-cyan-400 w-full sm:w-auto"></select>
+                        <button onclick="clearEditor()" class="text-[11px] text-slate-400 hover:text-white transition shrink-0">Clear</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                    <button onclick="insertKeywords('SELECT ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">SELECT</button>
+                    <button onclick="insertKeywords('* ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">*</button>
+                    <button onclick="insertKeywords('FROM ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">FROM</button>
+                    <button onclick="insertKeywords('WHERE ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">WHERE</button>
+                    <button onclick="insertKeywords('INNER JOIN ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">INNER JOIN</button>
+                    <button onclick="insertKeywords('LEFT JOIN ')" class="px-2 py-1 bg-slate-950 text-cyan-300 text-[11px] font-mono rounded-lg border border-cyan-500/30">LEFT JOIN</button>
+                </div>
+
+                <textarea id="sql-input" rows="5" placeholder="SELECT * FROM student; මෙහි ඔබේ SQL විධානය ලියන්න..." class="w-full bg-slate-950 text-slate-100 font-mono text-xs p-3.5 rounded-xl border border-slate-800 focus:outline-none focus:border-cyan-500 transition shadow-inner resize-none"></textarea>
+
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] text-slate-500 font-mono hidden sm:inline">Shortcut: Press Ctrl + Enter to Run</span>
+                    <button onclick="executeSQL()" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-cyan-500 via-emerald-500 to-purple-500 hover:opacity-90 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/25 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                        <span>විධානය ක්‍රියාත්මක කරන්න (Run SQL)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="error-box" class="hidden bg-rose-950/40 border border-rose-500/40 rounded-2xl p-4 text-xs space-y-2">
+                <div class="flex items-center gap-2 text-rose-400 font-bold">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
+                    <span id="error-title">කේත දෝෂයක් (Syntax Error) හමු විය!</span>
+                </div>
+                <p id="error-desc" class="text-slate-300 leading-relaxed"></p>
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-rose-500/20">
+                    <span class="text-[10px] font-mono text-cyan-400"> නිවැරදි කරගන්නා ආකාරය:</span>
+                    <p id="error-fix" class="text-slate-200 mt-1 font-mono text-[11px]"></p>
+                </div>
+            </div>
+
+            <!-- Output Display Window -->
+            <div class="bg-cardBg border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col min-h-[250px]">
+                <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+                    <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <i data-lucide="table-properties" class="w-4 h-4 text-emerald-400"></i>
+                        <span>ප්‍රතිඵල කවුළුව (Output Result Window)</span>
+                    </span>
+                    <span id="row-count" class="text-[11px] font-mono text-emerald-400">වාර්තා 0 කි</span>
+                </div>
+
+                <div id="output-container" class="flex-1 overflow-x-auto">
+                    <div class="h-full flex flex-col items-center justify-center text-slate-500 py-8">
+                        <i data-lucide="layout-grid" class="w-8 h-8 mb-2 opacity-50"></i>
+                        <p class="text-xs">Tree View එකෙන් Table එකක් ඔබන්න නැතහොත් 'Run SQL' ඔබන්න.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Web Audio API Sound Effects Engine -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'success') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now); osc.stop(now + 0.35);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.setValueAtTime(120, now + 0.1);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+        }
+    </script>
+
+    <!-- App Logic -->
+    <script>
+        let dbStore = {
+            'studentdetails': {
+                'student': [
+                    { StudentID: 'S001', Name: 'Kamal Perera', City: 'Pallama' },
+                    { StudentID: 'S002', Name: 'Nayani Silva', City: 'Gampaha' },
+                    { StudentID: 'S003', Name: 'Ruwan Fernando', City: 'Kandy' },
+                    { StudentID: 'S004', Name: 'Amara Jayasinghe', City: 'Colombo' }
+                ],
+                'marks': [
+                    { MarkID: 'M001', StudentID: 'S001', Subject: 'ICT', Score: 85 },
+                    { MarkID: 'M002', StudentID: 'S001', Subject: 'Science', Score: 78 },
+                    { MarkID: 'M003', StudentID: 'S002', Subject: 'ICT', Score: 92 },
+                    { MarkID: 'M004', StudentID: 'S003', Subject: 'ICT', Score: 65 },
+                    { MarkID: 'M005', StudentID: 'S004', Subject: 'Science', Score: 88 }
+                ]
+            },
+            'school_db': {
+                'teacher': [
+                    { TeacherID: 'T001', Name: 'Mr. Bandara', Subject: 'ICT' },
+                    { TeacherID: 'T002', Name: 'Mrs. Jayawardena', Subject: 'Mathematics' }
+                ]
+            }
+        };
+
+        let currentActiveDB = 'studentdetails';
+        let savedQueries = [
+            { id: 1, name: 'ලකුණු 75ට වැඩි ලැයිස්තුව', query: 'SELECT * FROM marks WHERE Score >= 75;' },
+            { id: 2, name: 'පල්ලම සිසුන් විමසීම', query: "SELECT * FROM student WHERE City = 'Pallama';" }
+        ];
+
+        function resetDatabase() {
+            playSound('click');
+            switchDatabase('studentdetails');
+            document.getElementById('sql-input').value = 'SELECT * FROM student;';
+            executeSQL();
+        }
+
+        function switchDatabase(dbName) {
+            if (!dbStore[dbName]) { dbStore[dbName] = {}; }
+            currentActiveDB = dbName;
+            document.getElementById('header-active-db').innerText = currentActiveDB;
+            document.getElementById('db-select-dropdown').value = currentActiveDB;
+
+            for (let t in alasql.tables) {
+                try { alasql(`DROP TABLE IF EXISTS ${t}`); } catch (e) {}
+            }
+
+            const tables = dbStore[currentActiveDB];
+            Object.keys(tables).forEach(tName => {
+                const records = tables[tName];
+                if (records && records.length > 0) {
+                    const cols = Object.keys(records[0]);
+                    const colDefs = cols.map(c => `${c} STRING`).join(', ');
+                    try {
+                        alasql(`CREATE TABLE ${tName} (${colDefs})`);
+                        records.forEach(r => {
+                            const vals = Object.values(r).map(v => typeof v === 'string' ? `'${v}'` : v).join(', ');
+                            alasql(`INSERT INTO ${tName} VALUES (${vals})`);
+                        });
+                    } catch (e) {}
+                } else {
+                    try { alasql(`CREATE TABLE ${tName} (ID STRING)`); } catch (e) {}
+                }
+            });
+
+            syncDatabaseDropdown();
+            renderDatabaseTree();
+        }
+
+        function syncDatabaseDropdown() {
+            const select = document.getElementById('db-select-dropdown');
+            select.innerHTML = '';
+            Object.keys(dbStore).forEach(db => {
+                const opt = document.createElement('option');
+                opt.value = db;
+                opt.innerText = db;
+                if (db === currentActiveDB) opt.selected = true;
+                select.appendChild(opt);
+            });
+            document.getElementById('header-active-db').innerText = currentActiveDB;
+        }
+
+        function renderDatabaseTree() {
+            const treeContainer = document.getElementById('tree-container');
+            treeContainer.innerHTML = '';
+            const serverNode = document.createElement('div');
+            serverNode.className = "space-y-1";
+            
+            let html = `
+                <div class="flex items-center gap-1.5 text-cyan-400 font-bold select-none cursor-pointer p-1 rounded hover:bg-slate-900">
+                    <i data-lucide="server" class="w-4 h-4"></i>
+                    <span>localhost (SQL Engine Server)</span>
+                </div>
+                <div class="pl-4 border-l border-slate-800 space-y-2 mt-1">
+            `;
+
+            Object.keys(dbStore).forEach(dbName => {
+                const isActive = dbName === currentActiveDB;
+                const dbBadge = isActive ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/30">Active</span>' : '';
+                
+                html += `
+                    <div class="space-y-1">
+                        <div onclick="toggleTreeNode('db-node-${dbName}')" class="flex items-center justify-between p-1 rounded hover:bg-slate-900 cursor-pointer text-slate-200 select-none">
+                            <div class="flex items-center gap-1.5">
+                                <i data-lucide="chevron-down" id="icon-db-node-${dbName}" class="w-3.5 h-3.5 text-slate-400 transition-transform"></i>
+                                <i data-lucide="database" class="w-3.5 h-3.5 ${isActive ? 'text-emerald-400' : 'text-cyan-400'}"></i>
+                                <span class="font-bold ${isActive ? 'text-emerald-300' : 'text-slate-200'}">${dbName}</span>
+                                ${dbBadge}
+                            </div>
+                            <button onclick="event.stopPropagation(); switchDatabase('${dbName}');" class="text-[9px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700">Use DB</button>
+                        </div>
+                        <div id="db-node-${dbName}" class="pl-4 border-l border-slate-800/80 space-y-1.5">
+                `;
+
+                const tables = dbStore[dbName] || {};
+                const tableNames = Object.keys(tables);
+
+                if (tableNames.length === 0) {
+                    html += `<div class="text-[10px] text-slate-500 italic pl-4 py-1">වගු නොමැත</div>`;
+                } else {
+                    tableNames.forEach(tName => {
+                        const records = tables[tName] || [];
+                        const cols = records.length > 0 ? Object.keys(records[0]) : ['ID'];
+                        html += `
+                            <div class="space-y-1">
+                                <div onclick="toggleTreeNode('tbl-node-${dbName}-${tName}')" class="flex items-center justify-between p-1 rounded hover:bg-slate-900 cursor-pointer text-slate-300 select-none">
+                                    <div class="flex items-center gap-1.5">
+                                        <i data-lucide="chevron-right" id="icon-tbl-node-${dbName}-${tName}" class="w-3 h-3 text-slate-500 transition-transform"></i>
+                                        <i data-lucide="table" class="w-3.5 h-3.5 text-amber-400"></i>
+                                        <span class="font-semibold text-slate-200">${tName}</span>
+                                        <span class="text-[9px] text-slate-500 font-mono">(${records.length})</span>
+                                    </div>
+                                    <button onclick="event.stopPropagation(); previewTableContent('${dbName}', '${tName}')" class="text-[9px] px-1.5 py-0.5 bg-cyan-500/20 text-cyan-300 rounded">View</button>
+                                </div>
+                                <div id="tbl-node-${dbName}-${tName}" class="hidden pl-5 space-y-1 border-l border-slate-800">
+                                    <div class="text-[10px] text-slate-400 font-semibold flex items-center gap-1 py-0.5">
+                                        <i data-lucide="columns" class="w-3 h-3 text-purple-400"></i><span>Columns</span>
+                                    </div>
+                                    <div class="pl-3 space-y-0.5">
+                        `;
+                        cols.forEach(col => {
+                            html += `<div class="text-[10px] text-slate-400 font-mono">${col}</div>`;
+                        });
+                        html += `</div></div></div>`;
+                    });
+                }
+                html += `</div></div>`;
+            });
+
+            html += `
+                <div class="pt-2 space-y-1">
+                    <div onclick="toggleTreeNode('saved-queries-node')" class="flex items-center gap-1.5 p-1 rounded hover:bg-slate-900 cursor-pointer text-slate-300 select-none">
+                        <i data-lucide="file-code" class="w-3.5 h-3.5 text-purple-400"></i>
+                        <span class="font-bold text-slate-200">සුරැකි විධාන</span>
+                    </div>
+                    <div id="saved-queries-node" class="pl-5 border-l border-slate-800 space-y-1">
+            `;
+            savedQueries.forEach(q => {
+                html += `<div onclick="loadQueryToEditor(\`${q.query}\`)" class="text-[11px] text-cyan-300 p-1 hover:bg-slate-900 cursor-pointer rounded">${q.name}</div>`;
+            });
+            html += `</div></div></div>`;
+
+            serverNode.innerHTML = html;
+            treeContainer.appendChild(serverNode);
+            lucide.createIcons();
+            syncDatabaseDropdown();
+        }
+
+        function toggleTreeNode(nodeId) {
+            playSound('click');
+            const target = document.getElementById(nodeId);
+            const icon = document.getElementById(`icon-${nodeId}`);
+            if (target) {
+                if (target.classList.contains('hidden')) {
+                    target.classList.remove('hidden');
+                    if (icon) icon.style.transform = 'rotate(0deg)';
+                } else {
+                    target.classList.add('hidden');
+                    if (icon) icon.style.transform = 'rotate(-90deg)';
+                }
+            }
+        }
+
+        function previewTableContent(dbName, tableName) {
+            playSound('click');
+            if (currentActiveDB !== dbName) { switchDatabase(dbName); }
+            document.getElementById('sql-input').value = `SELECT * FROM ${tableName};`;
+            executeSQL();
+        }
+
+        function executeSQL() {
+            playSound('click');
+            const query = document.getElementById('sql-input').value.trim();
+            const errorBox = document.getElementById('error-box');
+            const outputContainer = document.getElementById('output-container');
+            const rowCount = document.getElementById('row-count');
+            errorBox.classList.add('hidden');
+
+            if (!query) {
+                showSyntaxError("හිස් විධානයකි.", "කරුණාකර SQL විධානයක් ලියන්න.");
+                return;
+            }
+
+            try {
+                const upperQ = query.toUpperCase();
+                if (upperQ.startsWith('CREATE DATABASE')) {
+                    const newDb = query.split(/\s+/)[2]?.replace(';', '') || 'new_db';
+                    if (!dbStore[newDb]) dbStore[newDb] = {};
+                    switchDatabase(newDb);
+                    outputContainer.innerHTML = `<div class="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-mono">දත්ත සමුදාය '${newDb}' සාර්ථකව සාදන ලදී!</div>`;
+                    rowCount.innerText = "DB Created";
+                    playSound('success');
+                    return;
+                }
+
+                const res = alasql(query);
+                playSound('success');
+                syncAlaSQLToActiveDBStore();
+                renderDatabaseTree();
+
+                if (!Array.isArray(res)) {
+                    outputContainer.innerHTML = `<div class="p-4 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-mono">විධානය සාර්ථකව ක්‍රියාත්මක විය!</div>`;
+                    rowCount.innerText = "සාර්ථකයි";
+                    return;
+                }
+
+                if (res.length === 0) {
+                    outputContainer.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">ප්‍රතිඵල හමු නොවීය.</div>`;
+                    rowCount.innerText = "වාර්තා 0 කි";
+                    return;
+                }
+
+                renderResultTable(res);
+                rowCount.innerText = `වාර්තා ${res.length} කි`;
+            } catch (err) {
+                playSound('error');
+                showSyntaxError("කේත දෝෂයක් (Syntax Error)", err.message);
+            }
+        }
+
+        function renderResultTable(res) {
+            const outputContainer = document.getElementById('output-container');
+            const keys = Object.keys(res[0]);
+            let html = `<table class="w-full text-left border-collapse min-w-[350px] text-xs font-mono"><thead><tr class="border-b border-slate-800 bg-slate-950/80 text-cyan-400 font-bold">`;
+            keys.forEach(key => { html += `<th class="p-2.5 border-r border-slate-800/60">${key}</th>`; });
+            html += `</tr></thead><tbody>`;
+            res.forEach((row, idx) => {
+                const bg = idx % 2 === 0 ? 'bg-slate-900/40' : 'bg-transparent';
+                html += `<tr class="${bg} border-b border-slate-800/50">`;
+                keys.forEach(key => { html += `<td class="p-2.5 text-slate-300 border-r border-slate-800/40">${row[key] !== undefined ? row[key] : ''}</td>`; });
+                html += `</tr>`;
+            });
+            html += `</tbody></table>`;
+            outputContainer.innerHTML = html;
+        }
+
+        function syncAlaSQLToActiveDBStore() {
+            if (!dbStore[currentActiveDB]) dbStore[currentActiveDB] = {};
+            const currentDBTables = {};
+            Object.keys(alasql.tables).forEach(tName => {
+                try { currentDBTables[tName] = alasql(`SELECT * FROM ${tName}`) || []; } 
+                catch (e) { currentDBTables[tName] = dbStore[currentActiveDB][tName] || []; }
+            });
+            dbStore[currentActiveDB] = currentDBTables;
+        }
+
+        function showSyntaxError(title, desc, fix = "SQL විධාන අක්ෂර වින්‍යාසය පරීක්ෂා කරන්න.") {
+            document.getElementById('error-title').innerText = title;
+            document.getElementById('error-desc').innerText = desc;
+            document.getElementById('error-fix').innerText = fix;
+            document.getElementById('error-box').classList.remove('hidden');
+            document.getElementById('output-container').innerHTML = `<div class="p-4 text-center text-rose-400 text-xs">දෝෂයක් නිසා ප්‍රතිඵල පෙන්විය නොහැක.</div>`;
+            document.getElementById('row-count').innerText = "දෝෂයකි";
+        }
+
+        function insertKeywords(kw) {
+            playSound('click');
+            const input = document.getElementById('sql-input');
+            const start = input.selectionStart;
+            input.value = input.value.substring(0, start) + kw + input.value.substring(input.selectionEnd);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + kw.length;
+        }
+
+        function clearEditor() { playSound('click'); document.getElementById('sql-input').value = ''; }
+        function loadQueryToEditor(q) { playSound('click'); document.getElementById('sql-input').value = q; executeSQL(); }
+
+        function switchTab(tab) {
+            playSound('click');
+            ['tree', 'chart', 'commands', 'joins', 'normalization'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition";
+            });
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "flex-1 min-w-[95px] py-2 text-xs font-semibold rounded-lg bg-cyan-500 text-slate-950 transition shadow";
+        }
+
+        window.onload = () => {
+            switchDatabase('studentdetails');
+            lucide.createIcons();
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+        };
+    </script>
+</body>
+</html>
